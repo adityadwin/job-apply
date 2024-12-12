@@ -77,8 +77,8 @@
             });
             showAlert("Lamaran berhasil ditambahkan!", "success");
           }
-          loadLamaran();
-          clearForm();
+          loadLamaran(); // Refresh the data
+          clearForm(); // Clear the form
         } catch (e) {
           console.error("Error adding or updating document: ", e);
           showAlert("Terjadi kesalahan, coba lagi.", "error");
@@ -94,20 +94,21 @@
           const querySnapshot = await getDocs(collection(db, "lamaran"));
           querySnapshot.forEach((doc) => {
             const data = doc.data();
-            const row = document.createElement("tr");
+            const card = document.createElement("div");
+            card.className = "card";
 
-            row.innerHTML = `
-                <td>${data.perusahaan}</td>
-                <td>${data.posisi}</td>
-                <td>${data.alamat}</td>
-                <td>${data.tanggal_apply}</td>
-                <td>
-                  <button class="btn btn-edit" onclick="editLamaran('${doc.id}')">Edit</button>
-                  <button class="btn btn-delete" onclick="deleteLamaran('${doc.id}')">Delete</button>
-                </td>
-              `;
+            card.innerHTML = `
+              <h3>${data.perusahaan}</h3>
+              <p><strong>Posisi:</strong> ${data.posisi}</p>
+              <p><strong>Alamat:</strong> ${data.alamat}</p>
+              <p><strong>Tanggal Apply:</strong> ${data.tanggal_apply}</p>
+              <div class="card-actions">
+                <button class="btn btn-edit" onclick="editLamaran('${doc.id}')">Edit</button>
+                <button class="btn btn-delete" onclick="deleteLamaran('${doc.id}')">Delete</button>
+              </div>
+            `;
 
-            lamaranList.appendChild(row);
+            lamaranList.appendChild(card);
           });
         } catch (e) {
           console.error("Error loading documents: ", e);
@@ -159,10 +160,14 @@
         const alertBox = document.getElementById("alertBox");
         alertBox.textContent = message;
         alertBox.className = `alert alert-${type}`;
+        alertBox.style.display = "block"; // Ensure the alert is visible
+
+        // Hide the alert after a delay
         setTimeout(() => {
           alertBox.textContent = "";
-          alertBox.className = "";
-        }, 3000);
+          alertBox.className = "alert"; // Reset to default class
+          alertBox.style.display = "none"; // Hide the alert
+        }, 5000); // Keep the alert for 5 seconds
       }
 
       // Load lamaran when the page is loaded
@@ -174,13 +179,13 @@
         font-family: Arial, sans-serif;
         margin: 0;
         padding: 0;
-        box-sizing: border-box;
         background-color: #f4f4f9;
       }
 
       h1 {
         text-align: center;
         color: #4caf50;
+        padding: 20px 0;
       }
 
       .container {
@@ -216,27 +221,21 @@
         background-color: #45a049;
       }
 
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 20px;
+      .card {
+        background-color: #fff;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 10px 0;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
       }
 
-      table,
-      th,
-      td {
-        border: 1px solid #ddd;
-      }
-
-      th,
-      td {
-        padding: 12px;
-        text-align: left;
-      }
-
-      th {
-        background-color: #f4f4f4;
+      .card h3 {
+        margin-top: 0;
         color: #333;
+      }
+
+      .card-actions {
+        margin-top: 15px;
       }
 
       .btn {
@@ -244,6 +243,7 @@
         font-size: 14px;
         border-radius: 4px;
         cursor: pointer;
+        margin-right: 10px;
       }
 
       .btn-edit {
@@ -290,8 +290,8 @@
           padding: 15px;
         }
 
-        table {
-          font-size: 14px;
+        .card {
+          padding: 15px;
         }
       }
     </style>
@@ -317,19 +317,8 @@
         <button type="submit">Tambah atau Perbarui Lamaran</button>
       </form>
 
-      <!-- Tabel Lamaran -->
-      <table>
-        <thead>
-          <tr>
-            <th>Perusahaan</th>
-            <th>Posisi</th>
-            <th>Alamat</th>
-            <th>Tanggal Apply</th>
-            <th>Aksi</th>
-          </tr>
-        </thead>
-        <tbody id="lamaranList"></tbody>
-      </table>
+      <!-- Cards for displaying Lamaran -->
+      <div id="lamaranList"></div>
     </div>
   </body>
 </html>
