@@ -85,26 +85,40 @@
         }
       };
 
-      // Function to load all lamaran
+      // Function to load all lamaran, sorted by tanggal_apply (latest first)
       window.loadLamaran = async function () {
         const lamaranList = document.getElementById("lamaranList");
         lamaranList.innerHTML = ""; // Clear previous data
 
         try {
           const querySnapshot = await getDocs(collection(db, "lamaran"));
+          const lamaranData = [];
           querySnapshot.forEach((doc) => {
             const data = doc.data();
+            lamaranData.push({ id: doc.id, ...data });
+          });
+
+          // Sort lamaranData by tanggal_apply (newest first)
+          lamaranData.sort(
+            (a, b) => new Date(b.tanggal_apply) - new Date(a.tanggal_apply)
+          );
+
+          lamaranData.forEach((data, index) => {
             const card = document.createElement("div");
             card.className = "card";
 
             card.innerHTML = `
-              <h3>${data.perusahaan}</h3>
+              <h3>#${index + 1} - ${data.perusahaan}</h3>
               <p><strong>Posisi:</strong> ${data.posisi}</p>
               <p><strong>Alamat:</strong> ${data.alamat}</p>
               <p><strong>Tanggal Apply:</strong> ${data.tanggal_apply}</p>
               <div class="card-actions">
-                <button class="btn btn-edit" onclick="editLamaran('${doc.id}')">Edit</button>
-                <button class="btn btn-delete" onclick="deleteLamaran('${doc.id}')">Delete</button>
+                <button class="btn btn-edit" onclick="editLamaran('${
+                  data.id
+                }')">Edit</button>
+                <button class="btn btn-delete" onclick="deleteLamaran('${
+                  data.id
+                }')">Delete</button>
               </div>
             `;
 
@@ -293,6 +307,10 @@
         .card {
           padding: 15px;
         }
+
+        .btn {
+          font-size: 12px;
+        }
       }
     </style>
   </head>
@@ -317,7 +335,7 @@
         <button type="submit">Tambah atau Perbarui Lamaran</button>
       </form>
 
-      <!-- Cards for displaying Lamaran -->
+      <!-- List of Lamaran (Cards) -->
       <div id="lamaranList"></div>
     </div>
   </body>
