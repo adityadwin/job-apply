@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lamaran Kerja</title>
+    <!-- Add Firebase SDK for Firebase v9 (modular version) -->
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/9.19.0/firebase-app.js";
+      import {
+        getFirestore,
+        collection,
+        addDoc,
+        getDocs,
+        doc,
+        deleteDoc,
+        updateDoc,
+        getDoc,
+      } from "https://www.gstatic.com/firebasejs/9.19.0/firebase-firestore.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyBmq4FB8RZ3eaQof1acg6WmwWu5-B8U8r0",
+        authDomain: "job-apply-b0c1d.firebaseapp.com",
+        projectId: "job-apply-b0c1d",
+        storageBucket: "job-apply-b0c1d.firebasestorage.app",
+        messagingSenderId: "960029282143",
+        appId: "1:960029282143:web:4dbf57001ec76dbf12b0ea",
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+
+      let editingDocId = null; // To store the id of the document being edited
+
+      // Function to check if the company already exists
+      async function checkIfCompanyExists(perusahaan) {
+        const querySnapshot = await getDocs(collection(db, "lamaran"));
+        return querySnapshot.docs.some(
+          (doc) => doc.data().perusahaan === perusahaan
+        );
+      }
+
+      // Function to add or update lamaran
+      window.addLamaran = async function () {
+        const perusahaan = document.getElementById("perusahaan").value;
+        const posisi = document.getElementById("posisi").value;
+        const alamat = document.getElementById("alamat").value;
+        const tanggal = document.getElementById("tanggal").value;
+
+        try {
+          if (editingDocId) {
+            // Update the existing document
+            const docRef = doc(db, "lamaran", editingDocId);
+            await updateDoc(docRef, {
+              perusahaan: perusahaan,
+              posisi: posisi,
+              alamat: alamat,
+              tanggal_apply: tanggal,
+            });
+            showAlert("Lamaran berhasil diperbarui!", "success");
+          } else {
+            // Check if the company already exists only when adding new data
+            if (await checkIfCompanyExists(perusahaan)) {
+              showAlert(
+                "Perusahaan ini sudah ada dalam daftar lamaran.",
+                "warning"
+              );
+              return;
+            }
+
+            // Add a new document
+            await addDoc(collection(db, "lamaran"), {
+              perusahaan: perusahaan,
+              posisi: posisi,
+              alamat: alamat,
+              tanggal_apply: tanggal,
+            });
+            showAlert("Lamaran berhasil ditambahkan!", "success");
+          }
+          loadLamaran();
+          clearForm();
+        } catch (e) {
+          console.error("Error adding or updating document: ", e);
+          showAlert("Terjadi kesalahan, coba lagi.", "error");
+        }
+      };
+
+      // Function to load all lamaran
+      window.loadLamaran = async function () {
+        const lamaranList = document.getElementById("lamaranList");
+        lamaranList.innerHTML = ""; // Clear previous data
+
+        try {
+          const querySnapshot = await getDocs(collection(db, "lamaran"));
+          querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            const row = document.createElement("tr");
+
+            row.innerHTML = `
+                <td>${data.perusahaan}</td>
+                <td>${data.posisi}</td>
+                <td>${data.alamat}</td>
+                <td>${data.tanggal_apply}</td>
+                <td>
+                  <button class="btn btn-edit" onclick="editLamaran('${doc.id}')">Edit</button>
+                  <button class="btn btn-delete" onclick="deleteLamaran('${doc.id}')">Delete</button>
+                </td>
+              `;
+
+            lamaranList.appendChild(row);
+          });
+        } catch (e) {
+          console.error("Error loading documents: ", e);
+          showAlert("Gagal mengambil data.", "error");
+        }
+      };
+
+      // Function to edit a lamaran
+      window.editLamaran = async function (id) {
+        const docRef = doc(db, "lamaran", id);
+        const docSnap = await getDoc(docRef); // Use getDoc instead of get
+
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          document.getElementById("perusahaan").value = data.perusahaan;
+          document.getElementById("posisi").value = data.posisi;
+          document.getElementById("alamat").value = data.alamat;
+          document.getElementById("tanggal").value = data.tanggal_apply;
+
+          editingDocId = id; // Set the id of the document being edited
+        } else {
+          showAlert("Data lamaran tidak ditemukan.", "error");
+        }
+      };
+
+      // Function to delete a lamaran
+      window.deleteLamaran = async function (id) {
+        const confirmDelete = confirm(
+          "Apakah Anda yakin ingin menghapus lamaran ini?"
+        );
+        if (confirmDelete) {
+          await deleteDoc(doc(db, "lamaran", id));
+          showAlert("Lamaran berhasil dihapus.", "success");
+          loadLamaran();
+        }
+      };
+
+      // Function to clear the form
+      function clearForm() {
+        document.getElementById("perusahaan").value = "";
+        document.getElementById("posisi").value = "";
+        document.getElementById("alamat").value = "";
+        document.getElementById("tanggal").value = "";
+        editingDocId = null;
+      }
+
+      // Function to show custom alerts
+      function showAlert(message, type) {
+        const alertBox = document.getElementById("alertBox");
+        alertBox.textContent = message;
+        alertBox.className = `alert alert-${type}`;
+        setTimeout(() => {
+          alertBox.textContent = "";
+          alertBox.className = "";
+        }, 3000);
+      }
+
+      // Load lamaran when the page is loaded
+      window.onload = loadLamaran;
+    </script>
+
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        background-color: #f4f4f9;
+      }
+
+      h1 {
+        text-align: center;
+        color: #4caf50;
+      }
+
+      .container {
+        max-width: 800px;
+        margin: 30px auto;
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      form {
+        display: grid;
+        gap: 10px;
+      }
+
+      input,
+      button {
+        padding: 10px;
+        font-size: 16px;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+      }
+
+      button {
+        cursor: pointer;
+        background-color: #4caf50;
+        color: white;
+        border: none;
+      }
+
+      button:hover {
+        background-color: #45a049;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+      }
+
+      table,
+      th,
+      td {
+        border: 1px solid #ddd;
+      }
+
+      th,
+      td {
+        padding: 12px;
+        text-align: left;
+      }
+
+      th {
+        background-color: #f4f4f4;
+        color: #333;
+      }
+
+      .btn {
+        padding: 6px 12px;
+        font-size: 14px;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+
+      .btn-edit {
+        background-color: #4caf50;
+        color: white;
+      }
+
+      .btn-edit:hover {
+        background-color: #45a049;
+      }
+
+      .btn-delete {
+        background-color: #f44336;
+        color: white;
+      }
+
+      .btn-delete:hover {
+        background-color: #e53935;
+      }
+
+      .alert {
+        padding: 10px;
+        margin-bottom: 20px;
+        border-radius: 5px;
+        color: white;
+        font-weight: bold;
+        text-align: center;
+      }
+
+      .alert-success {
+        background-color: #4caf50;
+      }
+
+      .alert-error {
+        background-color: #f44336;
+      }
+
+      .alert-warning {
+        background-color: #ff9800;
+      }
+
+      @media (max-width: 600px) {
+        .container {
+          padding: 15px;
+        }
+
+        table {
+          font-size: 14px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Daftar Lamaran Kerja</h1>
+
+      <!-- Alert Box -->
+      <div id="alertBox" class="alert"></div>
+
+      <!-- Form Add/Edit -->
+      <form onsubmit="addLamaran(); return false;">
+        <input
+          type="text"
+          id="perusahaan"
+          placeholder="Nama Perusahaan"
+          required
+        />
+        <input type="text" id="posisi" placeholder="Posisi" required />
+        <input type="text" id="alamat" placeholder="Alamat" required />
+        <input type="date" id="tanggal" required />
+        <button type="submit">Tambah atau Perbarui Lamaran</button>
+      </form>
+
+      <!-- Tabel Lamaran -->
+      <table>
+        <thead>
+          <tr>
+            <th>Perusahaan</th>
+            <th>Posisi</th>
+            <th>Alamat</th>
+            <th>Tanggal Apply</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="lamaranList"></tbody>
+      </table>
+    </div>
+  </body>
+</html>
